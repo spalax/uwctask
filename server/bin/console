@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+require './environment'
+require 'logger'
+
+DB.logger = Logger.new(STDOUT)
+
+Pry.start

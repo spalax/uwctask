@@ -1,0 +1,40 @@
+require './environment'
+
+namespace :db do
+  desc 'Check RACK_ENV'
+  task :check_env do
+    raise 'The task is for use in dev mode only!' unless ENV['RACK_ENV'] == 'development'
+  end
+
+  desc "Create database"
+  task :create do
+    command = "mysql -e 'CREATE DATABASE #{DB_CONFIG[:database]}' -u #{DB_CONFIG[:username]}"
+    command += " --password=#{DB_CONFIG[:password]}" if DB_CONFIG[:password]
+
+    system command
+  end
+
+  desc "Drop database"
+  task :drop => :check_env do
+    command = "mysql -e 'DROP DATABASE #{DB_CONFIG[:database]}' -u #{DB_CONFIG[:username]}"
+    command += " --password=#{DB_CONFIG[:password]}" if DB_CONFIG[:password]
+
+    system command
+  end
+
+  desc "Run migrations"
+  task :migrate, [:version] do |t, args|
+    Sequel.extension :migration
+
+    if args[:version]
+      puts "Migrating to version #{args[:version]}"
+      Sequel::Migrator.run(DB, "db/migrations", target: args[:version].to_i)
+    else
+      puts "Migrating to latest"
+      Sequel::Migrator.run(DB, "db/migrations")
+    end
+  end
+
+  desc "Reset database"
+  task :reset => %i(check_env drop create migrate)
+end
